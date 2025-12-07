@@ -5,49 +5,19 @@ from pydantic import BaseModel
 import joblib, json, os
 import numpy as np
 from typing import Optional, Dict, Any
-import os
-import requests
-
-MODEL_PATH = os.path.join(BASE_DIR, "model", "air_pollution_model_bundle.pkl")
-MODEL_URL = os.getenv("MODEL_URL")  # set this in Render env if you use remote storage
-
-# If model not present and MODEL_URL provided, download it at startup
-if not os.path.exists(MODEL_PATH) and MODEL_URL:
-    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
-    print(f"Downloading model from {MODEL_URL} to {MODEL_PATH} ...")
-    with requests.get(MODEL_URL, stream=True) as r:
-        r.raise_for_status()
-        with open(MODEL_PATH, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1024*1024):
-                if chunk:
-                    f.write(chunk)
-    print("Model download complete.")
-
-# --- TEMP SKIP MODEL LOAD FOR DEBUGGING ---
-if os.environ.get("SKIP_MODEL_LOAD") == "1":
-    @app.get("/health")
-    def health():
-        return {"status": "ok", "note": "model load skipped"}
-    @app.get("/cities")
-    def debug_cities():
-        return {"cities": ["Manila","Quezon City","Makati City"]}
-    print("SKIP_MODEL_LOAD=1 -> started minimal server without loading model")
-    # Stop further import-time heavy work by returning early
-else:
-    print("Normal start: will attempt to load model bundle")
-# --- end temp ---
 
 app = FastAPI(
     title="Metro Manila Air Quality Risk Prediction API (with full AQI)",
     version="1.1.0"
 )
 
+# Allow CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://your-frontend-site.onrender.com"],  # replace with actual URL or use ["*"] for testing
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True
 )
 
 BASE_DIR = os.path.dirname(__file__)
